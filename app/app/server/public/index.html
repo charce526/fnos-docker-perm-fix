@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="author" content="charce526">
+  <base href="/app/docker-perm-fix/">
+  <title>Docker权限修复</title>
+  <link rel="icon" type="image/png" href="app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="model.js" defer></script>
+  <script src="ui.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+  <header class="app-header">
+    <img class="logo" src="app-icon.png" width="48" height="48" alt="">
+    <div class="brand"><h1>Docker权限修复</h1><span class="muted">挂载路径权限管理 <span id="version">1.3.0</span></span></div>
+    <div class="header-actions">
+      <details class="more-menu"><summary>更多操作</summary><div class="menu-panel"><button id="btn-export" class="ghost" disabled>导出诊断</button><button id="btn-audit" class="ghost" disabled>查看审计</button></div></details>
+      <button id="btn-help" class="ghost help-button" aria-haspopup="dialog" aria-label="帮助与工作原理"><svg class="help-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 7.5h.01"></path></svg> 帮助</button>
+    </div>
+  </header>
+  <div id="error" class="error-box" role="alert" hidden></div>
+  <div class="app-layout">
+    <aside class="project-sidebar card" aria-label="Docker 项目目录">
+      <div class="sidebar-title"><h2>Docker 项目</h2><span id="project-count" class="count">0</span></div>
+      <label class="sr-only" for="project-search">查找项目或容器</label>
+      <input id="project-search" type="search" placeholder="查找项目或容器…">
+      <nav id="project-tree" aria-label="项目与容器导航"><p class="empty">扫描后显示项目目录</p></nav>
+    </aside>
+    <div class="workspace">
+      <section class="card action-card" aria-labelledby="scan-title">
+        <div class="section-heading"><h2 id="scan-title">检查与修复</h2><div class="toolbar">
+          <button id="btn-scan" disabled>开始扫描</button><button id="btn-plan" class="danger" disabled>批量修复选中项</button>
+        </div></div>
+        <div id="scan-status" class="muted state-line" role="status" aria-live="polite">连接应用…</div>
+        <details id="dev-controls" hidden><summary>本地开发预览</summary><label for="dev-token">开发令牌 <input type="password" id="dev-token" autocomplete="off"></label><button id="btn-connect">连接</button></details>
+      </section>
+      <section id="fix-area" aria-label="修复结果" tabindex="-1" hidden></section>
+      <div id="stats-area"></div>
+      <section id="filter-area" class="filters card" hidden aria-label="筛选与选择">
+        <div class="toolbar">
+          <label for="search" class="sr-only">搜索容器、镜像、路径和原因</label><input id="search" type="search" placeholder="搜索容器、路径…">
+          <label for="filter-status" class="sr-only">结果状态</label><select id="filter-status"><option value="all">全部状态</option><option value="normal">正常</option><option value="attention">需关注</option><option value="incomplete">未检测</option><option value="error">检测失败</option></select>
+          <label for="filter-running" class="sr-only">容器运行状态</label><select id="filter-running"><option value="all">全部容器</option><option value="running">运行中</option><option value="stopped">已停止</option></select>
+        </div>
+        <div class="toolbar selection-bar"><label><input id="select-all" type="checkbox"> 全选可修复项</label><button id="btn-invert" class="small ghost">反选</button><button id="btn-clear" class="small ghost">清空</button><span id="selection-info" aria-live="polite"></span></div>
+      </section>
+      <section id="scan-area" aria-label="扫描结果" tabindex="-1"><div class="card empty"><span class="empty-symbol" aria-hidden="true">⌕</span><h2>准备检查 Docker 项目</h2><p>点击“开始扫描”查看 Docker 映射路径的权限</p></div></section>
+      <section id="audit-area" aria-label="审计日志" hidden class="card"><div class="section-heading"><h2>最近审计记录</h2><button id="btn-close-audit" class="small ghost">收起</button></div><pre id="audit-content"></pre></section>
+      <footer class="app-footer"><span>Docker权限修复</span><button id="btn-footer-help" class="text-button">帮助与工作原理</button></footer>
+    </div>
+  </div>
+</main>
+<dialog id="help-dlg" aria-labelledby="help-title">
+  <div class="dialog-heading"><div><span class="eyebrow">使用指南</span><h2 id="help-title">帮助与工作原理</h2></div><button id="btn-close-help" class="ghost" aria-label="关闭帮助">关闭</button></div>
+  <div class="help-content">
+    <section><h3>为什么会 Permission denied</h3>
+      <p>Linux 的普通权限由属主 UID、属组 GID 和权限位决定；飞牛 NAS 还会在 POSIX ACL 中记录用户、用户组、掩码和默认 ACL，共享目录通常使用继承 ACL 控制访问。Docker 绑定挂载只是把 NAS 目录映射到容器路径，不会把目录复制到容器里，也不会重写这些权限。</p>
+      <p>容器里的进程仍有一个宿主机视角的 UID/GID。容器内的路径访问最终由 Linux 内核按挂载在 NAS 上的真实文件判断：先看文件属主和权限位，再看 POSIX ACL、补充组和用户映射。Docker 镜像经常使用固定 UID，如 999、1000、1001；飞牛共享目录又可能由管理员账户或继承 ACL 管理。当两者不一致，而容器进程又不在允许访问的用户组里，读文件、写文件或进入目录就会被内核拒绝，容器日志通常显示 Permission denied。</p>
+      <p>常见场景包括：镜像用固定 UID/GID，但目录被飞牛用户或应用 UID 占有；Compose 设置了 user，但目录没有对齐到这个 UID/GID；共享目录的 ACL 掩码或拒绝项没有给容器进程对应身份；目录权限是 700 或 750，其他身份无法进入；挂载被设为只读但容器仍尝试写入；容器启用用户映射或 rootless 时，容器内身份与宿主机 UID 不同。属主不同不一定会失败，关键取决于容器实际需要读、写还是进入。</p>
+    </section>
+    <section><h3>本应用做什么</h3>
+      <p>应用扫描 Docker 明确映射到宿主机的目录或文件，检查容器实际身份能否访问这些路径。它只处理绑定挂载的挂载路径本身，不递归扫描子文件；只读挂载不要求写入。</p>
+      <p>修复时把挂载路径属主对齐到容器 UID/GID，再补齐业务所需的读、写或进入权限，保留 ACL。修复可以直接执行，不需要先停止容器；完成后建议重启容器并结合业务日志确认效果。</p>
+      <p>应用不自动停止或启动容器，不设置 777，不修改 Compose，不处理命名卷、系统目录、Docker 引擎内部目录、共享重叠路径、链接、硬链接文件和不支持的文件系统。</p>
+    </section>
+    <section><h3>检查原理</h3>
+      <p>应用从 Docker inspect 获取绑定挂载路径和容器身份，再从宿主机 /proc 中读取容器工作进程的 UID/GID、补充组和身份映射。随后以该身份模拟访问挂载路径，判断读、写、进入是否满足需求。</p>
+      <p>结果只表示挂载路径在已检查范围内的访问能力，不代表容器内全部运行环境。无法核实身份、容器已停止或本次未执行检查时显示“未检测”；不能把“未检测”当作正常或异常。</p>
+    </section>
+    <section><h3>应用侧操作</h3>
+      <ol>
+        <li>点击“开始扫描”。左侧目录树会列出 Docker 项目和容器，右侧显示检查结果。</li>
+        <li>点击项目或容器跳转；点击顶部“正常 / 需关注 / 未检测 / 检测失败”状态卡筛选列表，再次点击同一状态卡恢复全部状态。</li>
+        <li>展开“查看诊断与范围”，确认路径、容器身份、当前属主和受限操作。</li>
+        <li>勾选可修复项，点击“批量修复选中项”预览变更。确认窗口会列出路径和修改前后的属主、权限。</li>
+        <li>确认执行后，修复结果显示在“检查与修复”下方，可点击“收起”。请重启对应容器并结合业务日志确认效果。</li>
+        <li>修复后可重新扫描验证最新权限状态。“更多操作”支持导出诊断和查看审计。</li>
+      </ol>
+    </section>
+    <section><h3>四种结果状态</h3><dl class="status-guide"><dt><span class="badge normal">正常</span></dt><dd>挂载路径在已检查范围内访问通过。属主不同本身不表示权限错误。</dd><dt><span class="badge attention">需关注</span></dt><dd>挂载路径存在访问限制或路径问题；只读配置不可写可能正常，不等于容器启动故障。</dd><dt><span class="badge incomplete">未检测</span></dt><dd>容器已停止、身份无法模拟，或本次未执行访问检查；没有绑定挂载的容器也计入此项。</dd><dt><span class="badge error">检测失败</span></dt><dd>检测执行发生错误，需查看原因后重新扫描。</dd></dl><p>项目、容器显示其中最需要关注的状态；左侧始终保留所有项目，点击跳转会清除右侧筛选。</p></section>
+    <section><h3>修复边界</h3>
+      <p>修复期间请勿重启、重建或修改对应容器，否则应用会拒绝继续执行并提示重新预览。执行前会重新核对容器配置、挂载路径和运行身份。缺少 getfacl 时禁用修复；调整普通文件属主前还会检查 getcap。</p>
+      <p>每批最多 100 个挂载路径。修改记录保留权限和 ACL 信息，可用于排查，但不包含文件内容，不是业务备份。</p>
+    </section>
+    <section class="about"><img src="app-icon.png" width="40" height="40" alt=""><div><strong>Docker权限修复</strong><p>作者：<a href="https://github.com/charce526" target="_blank" rel="noopener noreferrer">charce526</a></p></div></section>
+  </div>
+</dialog>
+<dialog id="confirm-dlg" aria-labelledby="confirm-title" aria-describedby="confirm-description">
+  <h2 id="confirm-title">确认修复</h2><p id="confirm-description">确认后将把挂载路径对齐到容器 UID/GID，并补充访问权限；ACL 保留。修复期间请勿重启、重建或修改对应容器。</p>
+  <div id="confirm-list"></div>
+  <label><input type="checkbox" id="confirm-impact"> 我已核对容器、路径和权限变更，确认执行</label>
+  <div class="actions"><button id="dlg-cancel" class="ghost">取消</button><button id="dlg-ok" class="danger" disabled>确认执行</button></div>
+</dialog>
+</body>
+</html>

@@ -1,0 +1,16 @@
+* text=auto
+
+*.cjs text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+
+app/cmd/* text eol=lf
+app/app/server/bin/* text eol=lf
+scripts/*.sh text eol=lf
+
+*.fpk binary
+*.png binary
+*.exe binary

@@ -1,0 +1,7 @@
+#!/bin/bash
+# AppCenter must stop the old version before replacing executable files.
+set -euo pipefail
+if [[ -f "${TRIM_APPDEST:-}/server/control.js" ]]; then
+  exec /bin/bash "$(dirname "$0")/main" stop
+fi
+exit 0

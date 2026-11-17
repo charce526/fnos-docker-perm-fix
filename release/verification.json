@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "version": "1.3.0",
+  "node": "v24.16.0",
+  "packageSha256": "a7f9aeb2c208359826dcc222f90517480d5737c80cc5ed49b129b7168946f5d7",
+  "runtimeFilesMatched": 20,
+  "javascriptFilesParsed": 11,
+  "outerEntries": 19,
+  "innerEntries": 771,
+  "checkedDocLinks": 27,
+  "checklistIdsCovered": 45,
+  "checks": [
+    "version",
+    "package checksum",
+    "runtime source parity",
+    "archive permissions",
+    "manifest checksum",
+    "JavaScript syntax",
+    "documentation links"
+  ]
+}

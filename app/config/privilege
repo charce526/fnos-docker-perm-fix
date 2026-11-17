@@ -1,0 +1,7 @@
+{
+  "defaults": {
+    "run-as": "root"
+  },
+  "username": "docker-perm-fix",
+  "groupname": "docker-perm-fix"
+}

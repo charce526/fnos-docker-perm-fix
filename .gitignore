@@ -1,0 +1,6 @@
+.build/
+logs/
+release/docker-perm-fix.fpk
+app/app/server/node_modules/
+.DS_Store
+Thumbs.db

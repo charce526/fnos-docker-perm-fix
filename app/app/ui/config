@@ -1,0 +1,17 @@
+{
+  ".url": {
+    "docker-perm-fix.main": {
+      "title": "Docker权限修复",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "protocol": "",
+      "gatewayPrefix": "/app/docker-perm-fix",
+      "gatewaySocket": "app.sock",
+      "url": "/app/docker-perm-fix",
+      "allUsers": false,
+      "control": {
+        "accessPerm": "readonly"
+      }
+    }
+  }
+}

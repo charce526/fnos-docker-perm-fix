@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+: "${TRIM_APPDEST:?TRIM_APPDEST is required}"
+: "${TRIM_PKGVAR:?TRIM_PKGVAR is required}"
+NODE=/var/apps/nodejs_v22/target/bin/node
+if [[ ! -x "$NODE" ]]; then
+  [[ -z "${TRIM_TEMP_LOGFILE:-}" ]] || printf '%s\n' '未找到 nodejs_v22，请检查依赖应用。' > "$TRIM_TEMP_LOGFILE"
+  exit 1
+fi
+exec "$NODE" "$TRIM_APPDEST/server/control.js" "${1:-}"
