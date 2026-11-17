@@ -4,7 +4,7 @@
 
 检查飞牛 fnOS 中 Docker 项目明确映射到宿主机的目录或文件权限，定位挂载路径访问异常，并在预览后批量执行权限修复。
 
-**版本：1.3.0** · **作者：[charce526](https://github.com/charce526)**
+**版本：1.3.0**
 
 [下载安装包](release/docker-perm-fix-1.3.0.fpk) · [维护文档](docs/MAINTENANCE.md) · [接口说明](docs/API.md)
 
